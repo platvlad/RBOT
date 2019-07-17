@@ -68,7 +68,20 @@ public:
      *  @param qualityThreshold  The individual quality tracking quality threshold used to decide whether tracking and detection have been successful (should be within [0.5,0.6]).
      *  @param templateDistances  A vector of absolute Z-distance values to be used for template generation (typically 3 values: a close, an intermediate and a far distance)
      */
-    Object3D(const std::string objFilename, float tx, float ty, float tz, float alpha, float beta, float gamma, float scale, float qualityThreshold, std::vector<float> &templateDistances);
+    Object3D(const std::string& objFilename,
+             float tx, float ty, float tz,
+             float alpha, float beta, float gamma,
+             float scale,
+             float qualityThreshold,
+             std::vector<float> &templateDistances,
+             int radius);
+
+    Object3D(const std::string& objFilename,
+             cv::Matx44f modelPose,
+             float scale,
+             float qualityThreshold,
+             std::vector<float> &templateDistances,
+             int radius);
     
     ~Object3D();
     
@@ -79,6 +92,8 @@ public:
      *  @return  True if it has been lost and false otherwise.
      */
     bool isTrackingLost();
+
+    void initIcosahedrons();
     
     /**
      *  Sets the tracking state of the object.

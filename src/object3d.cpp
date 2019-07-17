@@ -45,75 +45,92 @@ bool sortDistance(std::pair<float, int> a, std::pair<float, int> b)
     return a.first < b.first;
 }
 
-Object3D::Object3D(const string objFilename, float tx, float ty, float tz, float alpha, float beta, float gamma, float scale, float qualityThreshold,  vector<float> &templateDistances) : Model(objFilename, tx, ty, tz, alpha, beta, gamma, scale)
+Object3D::Object3D(const string& objFilename, float tx, float ty, float tz, float alpha, float beta, float gamma,
+                   float scale, float qualityThreshold,  vector<float> &templateDistances, int radius) :
+                   Model(objFilename, tx, ty, tz, alpha, beta, gamma, scale),
+                   qualityThreshold(qualityThreshold),
+                   templateDistances(templateDistances),
+                   trackingLost(false),
+                   numDistances((int)templateDistances.size()),
+                   tclcHistograms(new TCLCHistograms(this, 32, radius, 10.0f))
 {
-    this->trackingLost = false;
-    
-    this->qualityThreshold = qualityThreshold;
-    
-    this->templateDistances = templateDistances;
-    
-    this->numDistances = (int)templateDistances.size();
-    
-    this->tclcHistograms = new TCLCHistograms(this, 32, 40, 10.0f);
-    
+    initIcosahedrons();
+}
+
+Object3D::Object3D(const string& objFilename,
+                   cv::Matx44f modelPose,
+                   float scale,
+                   float qualityThreshold,
+                   std::vector<float> &templateDistances,
+                   int radius) : Model(objFilename, modelPose, scale),
+                                   qualityThreshold(qualityThreshold),
+                                   templateDistances(templateDistances),
+                                   trackingLost(false),
+                                   numDistances((int)templateDistances.size()),
+                                   tclcHistograms(new TCLCHistograms(this, 32, radius, 10.0f))
+{
+    initIcosahedrons();
+}
+
+void Object3D::initIcosahedrons()
+{
     // icosahedron geometry for generating the base templates
-    baseIcosahedron.push_back(Vec3f(0, 1, 1.61803));
-    baseIcosahedron.push_back(Vec3f(1, 1.61803, 0));
-    baseIcosahedron.push_back(Vec3f(-1, 1.61803, 0));
-    baseIcosahedron.push_back(Vec3f(0, 1, -1.61803));
-    baseIcosahedron.push_back(Vec3f(1.61803, 0, -1));
-    baseIcosahedron.push_back(Vec3f(0, -1, -1.61803));
-    baseIcosahedron.push_back(Vec3f(-1.61803, 0, -1));
-    baseIcosahedron.push_back(Vec3f(-1, -1.61803, 0));
-    baseIcosahedron.push_back(Vec3f(-1.61803, 0, 1));
-    baseIcosahedron.push_back(Vec3f(0, -1, 1.61803));
-    baseIcosahedron.push_back(Vec3f(1.61803, 0, 1));
-    baseIcosahedron.push_back(Vec3f(1, -1.61803, 0));
-    
+    baseIcosahedron.emplace_back(Vec3f(0, 1, 1.61803));
+    baseIcosahedron.emplace_back(Vec3f(1, 1.61803, 0));
+    baseIcosahedron.emplace_back(Vec3f(-1, 1.61803, 0));
+    baseIcosahedron.emplace_back(Vec3f(0, 1, -1.61803));
+    baseIcosahedron.emplace_back(Vec3f(1.61803, 0, -1));
+    baseIcosahedron.emplace_back(Vec3f(0, -1, -1.61803));
+    baseIcosahedron.emplace_back(Vec3f(-1.61803, 0, -1));
+    baseIcosahedron.emplace_back(Vec3f(-1, -1.61803, 0));
+    baseIcosahedron.emplace_back(Vec3f(-1.61803, 0, 1));
+    baseIcosahedron.emplace_back(Vec3f(0, -1, 1.61803));
+    baseIcosahedron.emplace_back(Vec3f(1.61803, 0, 1));
+    baseIcosahedron.emplace_back(Vec3f(1, -1.61803, 0));
+
     // sub-divided icosahedron geometry for generating the neighboring templates
-    subdivIcosahedron.push_back(Vec3f(0, 1.90811, 0));
-    subdivIcosahedron.push_back(Vec3f(-0.589637, 1.54369, 0.954053));
-    subdivIcosahedron.push_back(Vec3f(0.589637, 1.54369, 0.954053));
-    subdivIcosahedron.push_back(Vec3f(0.589637, 1.54369, -0.954053));
-    subdivIcosahedron.push_back(Vec3f(-0.589637, 1.54369, -0.954053));
-    subdivIcosahedron.push_back(Vec3f(0, 0, -1.90811));
-    subdivIcosahedron.push_back(Vec3f(0.954053, 0.589637, -1.54369));
-    subdivIcosahedron.push_back(Vec3f(0.954053, -0.589637, -1.54369));
-    subdivIcosahedron.push_back(Vec3f(-0.954053, -0.589637, -1.54369));
-    subdivIcosahedron.push_back(Vec3f(-0.954053, 0.589637, -1.54369));
-    subdivIcosahedron.push_back(Vec3f(-1.90811, 0, 0));
-    subdivIcosahedron.push_back(Vec3f(-1.54369, -0.954053, -0.589637));
-    subdivIcosahedron.push_back(Vec3f(-1.54369, -0.954053, 0.589637));
-    subdivIcosahedron.push_back(Vec3f(-1.54369, 0.954053, 0.589637));
-    subdivIcosahedron.push_back(Vec3f(-1.54369, 0.954053, -0.589637));
-    subdivIcosahedron.push_back(Vec3f(0, 0, 1.90811));
-    subdivIcosahedron.push_back(Vec3f(-0.954053, 0.589637, 1.54369));
-    subdivIcosahedron.push_back(Vec3f(-0.954053, -0.589637, 1.54369));
-    subdivIcosahedron.push_back(Vec3f(0.954053, -0.589637, 1.54369));
-    subdivIcosahedron.push_back(Vec3f(0.954053, 0.589637, 1.54369));
-    subdivIcosahedron.push_back(Vec3f(1.90811, 0, 0));
-    subdivIcosahedron.push_back(Vec3f(1.54369, -0.954053, 0.589637));
-    subdivIcosahedron.push_back(Vec3f(1.54369, -0.954053, -0.589637));
-    subdivIcosahedron.push_back(Vec3f(1.54369, 0.954053, -0.589637));
-    subdivIcosahedron.push_back(Vec3f(1.54369, 0.954053, 0.589637));
-    subdivIcosahedron.push_back(Vec3f(0, -1.90811, 0));
-    subdivIcosahedron.push_back(Vec3f(-0.589637, -1.54369, -0.954053));
-    subdivIcosahedron.push_back(Vec3f(0.589637, -1.54369, -0.954053));
-    subdivIcosahedron.push_back(Vec3f(0.589637, -1.54369, 0.954053));
-    subdivIcosahedron.push_back(Vec3f(-0.589637, -1.54369, 0.954053));
-    subdivIcosahedron.push_back(Vec3f(-1.00074, 1.61923, 0));
-    subdivIcosahedron.push_back(Vec3f(0, 1.00074, 1.61923));
-    subdivIcosahedron.push_back(Vec3f(1.00074, 1.61923, 0));
-    subdivIcosahedron.push_back(Vec3f(0, 1.00074, -1.61923));
-    subdivIcosahedron.push_back(Vec3f(1.61923, 0, -1.00074));
-    subdivIcosahedron.push_back(Vec3f(0, -1.00074, -1.61923));
-    subdivIcosahedron.push_back(Vec3f(-1.61923, 0, -1.00074));
-    subdivIcosahedron.push_back(Vec3f(-1.00074, -1.61923, 0));
-    subdivIcosahedron.push_back(Vec3f(-1.61923, 0, 1.00074));
-    subdivIcosahedron.push_back(Vec3f(0, -1.00074, 1.61923));
-    subdivIcosahedron.push_back(Vec3f(1.61923, 0, 1.00074));
-    subdivIcosahedron.push_back(Vec3f(1.00074, -1.61923, 0));
+    subdivIcosahedron.emplace_back(Vec3f(0, 1.90811, 0));
+    subdivIcosahedron.emplace_back(Vec3f(-0.589637, 1.54369, 0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(0.589637, 1.54369, 0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(0.589637, 1.54369, -0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(-0.589637, 1.54369, -0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(0, 0, -1.90811));
+    subdivIcosahedron.emplace_back(Vec3f(0.954053, 0.589637, -1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(0.954053, -0.589637, -1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(-0.954053, -0.589637, -1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(-0.954053, 0.589637, -1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(-1.90811, 0, 0));
+    subdivIcosahedron.emplace_back(Vec3f(-1.54369, -0.954053, -0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(-1.54369, -0.954053, 0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(-1.54369, 0.954053, 0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(-1.54369, 0.954053, -0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(0, 0, 1.90811));
+    subdivIcosahedron.emplace_back(Vec3f(-0.954053, 0.589637, 1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(-0.954053, -0.589637, 1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(0.954053, -0.589637, 1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(0.954053, 0.589637, 1.54369));
+    subdivIcosahedron.emplace_back(Vec3f(1.90811, 0, 0));
+    subdivIcosahedron.emplace_back(Vec3f(1.54369, -0.954053, 0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(1.54369, -0.954053, -0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(1.54369, 0.954053, -0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(1.54369, 0.954053, 0.589637));
+    subdivIcosahedron.emplace_back(Vec3f(0, -1.90811, 0));
+    subdivIcosahedron.emplace_back(Vec3f(-0.589637, -1.54369, -0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(0.589637, -1.54369, -0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(0.589637, -1.54369, 0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(-0.589637, -1.54369, 0.954053));
+    subdivIcosahedron.emplace_back(Vec3f(-1.00074, 1.61923, 0));
+    subdivIcosahedron.emplace_back(Vec3f(0, 1.00074, 1.61923));
+    subdivIcosahedron.emplace_back(Vec3f(1.00074, 1.61923, 0));
+    subdivIcosahedron.emplace_back(Vec3f(0, 1.00074, -1.61923));
+    subdivIcosahedron.emplace_back(Vec3f(1.61923, 0, -1.00074));
+    subdivIcosahedron.emplace_back(Vec3f(0, -1.00074, -1.61923));
+    subdivIcosahedron.emplace_back(Vec3f(-1.61923, 0, -1.00074));
+    subdivIcosahedron.emplace_back(Vec3f(-1.00074, -1.61923, 0));
+    subdivIcosahedron.emplace_back(Vec3f(-1.61923, 0, 1.00074));
+    subdivIcosahedron.emplace_back(Vec3f(0, -1.00074, 1.61923));
+    subdivIcosahedron.emplace_back(Vec3f(1.61923, 0, 1.00074));
+    subdivIcosahedron.emplace_back(Vec3f(1.00074, -1.61923, 0));
 }
 
 

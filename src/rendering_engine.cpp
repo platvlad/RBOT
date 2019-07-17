@@ -88,7 +88,7 @@ void RenderingEngine::destroy()
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    
+    std::cout << "In rendering engine destroy before deleting instance" << std::endl;
     delete instance;
     instance = NULL;
 }
@@ -199,6 +199,25 @@ void RenderingEngine::init(const Matx33f& K, int width, int height, float zNear,
     initRenderingBuffers();
     
     shaderFolder = "src/";
+    fragment_shaders_codes["normals"] =
+            #include "normals_fragment_shader.fs"
+                    ;
+    fragment_shaders_codes["phongblinn"] =
+            #include "phongblinn_fragment_shader.fs"
+                    ;
+    fragment_shaders_codes["silhouette"] =
+            #include "silhouette_fragment_shader.fs"
+                    ;
+
+    vertex_shaders_codes["normals"] =
+            #include "normals_vertex_shader.vs"
+                    ;
+    vertex_shaders_codes["phongblinn"] =
+            #include "phongblinn_vertex_shader.vs"
+                    ;
+    vertex_shaders_codes["silhouette"] =
+            #include "silhouette_vertex_shader.vs"
+                    ;
     
     initShaderProgram(silhouetteShaderProgram, "silhouette");
     initShaderProgram(phongblinnShaderProgram, "phongblinn");
@@ -270,11 +289,12 @@ bool RenderingEngine::initRenderingBuffers()
 
 bool RenderingEngine::initShaderProgram(QOpenGLShaderProgram *program, QString shaderName)
 {
-    if (!program->addShaderFromSourceFile(QOpenGLShader::Vertex, shaderFolder + shaderName + "_vertex_shader.glsl")) {
+    if (!program->addShaderFromSourceCode(QOpenGLShader::Vertex, vertex_shaders_codes[shaderName]))
+    {
         cout << "error adding vertex shader from source file" << endl;
         return false;
     }
-    if (!program->addShaderFromSourceFile(QOpenGLShader::Fragment, shaderFolder + shaderName + "_fragment_shader.glsl")) {
+    if (!program->addShaderFromSourceCode(QOpenGLShader::Fragment, fragment_shaders_codes[shaderName])) {
         cout << "error adding fragment shader from source file" << endl;
         return false;
     }

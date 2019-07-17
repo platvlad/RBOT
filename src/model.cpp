@@ -46,35 +46,44 @@
 using namespace std;
 using namespace cv;
 
-Model::Model(const string modelFilename, float tx, float ty, float tz, float alpha, float beta, float gamma, float scale)
+Model::Model(const string& modelFilename, float tx, float ty, float tz, float alpha, float beta, float gamma,
+             float scale) : m_id(0),
+                            initialized(false),
+                            buffersInitialised(false),
+                            scaling(scale),
+                            hasNormals(false)
 {
-    m_id = 0;
-    
-    initialized = false;
-    
-    buffersInitialsed = false;
-    
     T_i = Transformations::translationMatrix(tx, ty, tz)
     *Transformations::rotationMatrix(alpha, Vec3f(1, 0, 0))
     *Transformations::rotationMatrix(beta, Vec3f(0, 1, 0))
     *Transformations::rotationMatrix(gamma, Vec3f(0, 0, 1))
     *Matx44f::eye();
-    
     T_cm = T_i;
-    
-    scaling = scale;
-    
+    init(modelFilename);
+}
+
+Model::Model(const std::string& modelFilename, cv::Matx44f modelPose, float scale) : m_id(0),
+                                                                                     initialized(false),
+                                                                                     buffersInitialised(false),
+                                                                                     T_i(modelPose),
+                                                                                     T_cm(modelPose),
+                                                                                     scaling(scale),
+                                                                                     hasNormals(false)
+{
+    init(modelFilename);
+}
+
+void Model::init(const std::string& modelFilename)
+{
+
     T_n = Matx44f::eye();
-    
-    hasNormals = false;
-    
+
     vertexBuffer = QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
     normalBuffer = QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
     indexBuffer = QOpenGLBuffer(QOpenGLBuffer::IndexBuffer);
-    
+
     loadModel(modelFilename);
 }
-
 
 Model::~Model()
 {
@@ -84,7 +93,7 @@ Model::~Model()
     indices.clear();
     offsets.clear();
     
-    if(buffersInitialsed)
+    if(buffersInitialised)
     {
         vertexBuffer.release();
         vertexBuffer.destroy();
@@ -113,7 +122,7 @@ void Model::initBuffers()
     indexBuffer.bind();
     indexBuffer.allocate(indices.data(), (int)indices.size() * sizeof(int));
     
-    buffersInitialsed = true;
+    buffersInitialised = true;
 }
 
 
@@ -282,5 +291,5 @@ void Model::loadModel(const string modelFilename)
     // compute a normalization transform that moves the object to the center of its bounding box and scales it according to the prescribed factor
     T_n = Transformations::scaleMatrix(scaling)*Transformations::translationMatrix(-bbCenter[0], -bbCenter[1], -bbCenter[2]);
     
-    //T_n = Transformations::scaleMatrix(scaling);
+    // T_n = Transformations::scaleMatrix(scaling);
 }

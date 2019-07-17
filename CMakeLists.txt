@@ -21,6 +21,7 @@ FIND_PACKAGE(OpenCV REQUIRED)
 FIND_PACKAGE(Qt5Widgets REQUIRED)
 FIND_PACKAGE(Qt5OpenGL REQUIRED)
 FIND_PACKAGE(ASSIMP REQUIRED)
+FIND_PACKAGE( Boost 1.66 COMPONENTS filesystem program_options system REQUIRED )
 
 SET(LIBRARIES 
 	Qt5::Widgets 
@@ -28,6 +29,8 @@ SET(LIBRARIES
 	${OpenCV_LIBS}
 	${OPENGL_LIBRARIES}
 	${ASSIMP_LIBRARIES}
+	${Boost_LIBRARIES}
+	${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/build/libyaml-cpp.a
 )
 
 
@@ -35,10 +38,12 @@ INCLUDE_DIRECTORIES(
 	${OpenCV_INCLUDE_DIRS} 
 	${OPENGL_INCLUDE_DIR}
 	${ASSIMP_INCLUDE_DIR}
+	${Boost_INCLUDE_DIR}
+	${PROJECT_SOURCE_DIR}/deps/yaml-cpp-release-0.3.0/include/
 )
 
 
-ADD_EXECUTABLE(${PROJECTNAME} ${SOURCES})
+ADD_EXECUTABLE(${PROJECTNAME} ${SOURCES} src/argparsing.h src/argparsing.cpp src/OptProcessor.h src/OptProcessor.cpp src/RBOTTestRunner.h src/RBOTTestRunner.cpp src/io.hpp src/io.cpp src/data.hpp src/data.cpp src/FrameGetter.h src/StrictFrameGetter.h src/StrictFrameGetter.cpp src/SingleIterationFrameGetter.h src/SingleIterationFrameGetter.cpp src/EnhancingFrameGetter.h src/EnhancingFrameGetter.cpp)
 
 TARGET_LINK_LIBRARIES(${PROJECTNAME} ${LIBRARIES})
 

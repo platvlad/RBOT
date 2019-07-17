@@ -72,9 +72,13 @@ public:
      *  @param gamma  The models initial Euler angle rotation about Z-axis of the camera.
      *  @param scale  A scaling factor applied to the model in order change its size independent of the original data.
      */
-    Model(const std::string modelFilename, float tx, float ty, float tz, float alpha, float beta, float gamma, float scale);
+    Model(const std::string& modelFilename, float tx, float ty, float tz, float alpha, float beta, float gamma, float scale);
+
+    Model(const std::string& modelFilename, cv::Matx44f modelPose, float scale);
     
     ~Model();
+
+    void init(const std::string& modelFilename);
     
     /**
      *  Draws the model with a given shader programm and
@@ -248,7 +252,7 @@ private:
     QOpenGLBuffer normalBuffer;
     QOpenGLBuffer indexBuffer;
     
-    bool buffersInitialsed;
+    bool buffersInitialised;
     
     cv::Vec3f lbn;
     cv::Vec3f rtf;

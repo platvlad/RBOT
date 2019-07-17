@@ -68,7 +68,7 @@ PoseEstimator6D::PoseEstimator6D(int width, int height, float zNear, float zFar,
     
     for(int i = 0; i < objects.size(); i++)
     {
-        objects[i]->setModelID(i+1);
+        objects[i]->setModelID(i + 1);
         this->objects.push_back(objects[i]);
         this->objects[i]->initBuffers();
         this->objects[i]->generateTemplates();
@@ -83,11 +83,13 @@ PoseEstimator6D::PoseEstimator6D(int width, int height, float zNear, float zFar,
 
 PoseEstimator6D::~PoseEstimator6D()
 {
+    std::cout << "In pose estimator destructor" << std::endl;
     renderingEngine->destroy();
-    
+    std::cout << "After renderingEngine destroy" << std::endl;
     delete optimizationEngine;
     
     delete SDT2D;
+    std::cout << "Exit PoseEstimator destructor" << std::endl;
 }
 
 
@@ -129,8 +131,7 @@ void PoseEstimator6D::toggleTracking(cv::Mat &frame, int objectIndex, bool undis
     }
 }
 
-
-void PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool checkForLoss)
+float PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool checkForLoss)
 {
     if(undistortFrame)
         remap(frame, frame, map1, map2, INTER_LINEAR);
@@ -145,7 +146,9 @@ void PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool ch
         resize(frame, frameCpy, Size(frame.cols/pow(2, l), frame.rows/pow(2, l)));
         imagePyramid.push_back(frameCpy);
     }
-    
+
+    float firstObjectResidual = 0;
+
     if(initialized)
     {
         optimizationEngine->minimize(imagePyramid, objects);
@@ -170,6 +173,10 @@ void PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool ch
                 if(!objects[i]->isTrackingLost())
                 {
                     float e = evaluateEnergyFunction(objects[i], mask, depth, binned, 0, 8);
+                    if (i == 0)
+                    {
+                        firstObjectResidual = e;
+                    }
                     
                     if(checkForLoss && (e > objects[i]->getQualityThreshold() || e == 0.0f))
                     {
@@ -188,6 +195,7 @@ void PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool ch
             }
         }
     }
+    return firstObjectResidual;
 }
 
 void PoseEstimator6D::relocalize(Object3D *object, vector<Mat> &imagePyramid)

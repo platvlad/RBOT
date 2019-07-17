@@ -317,6 +317,8 @@ private:
     cv::Vec3f lightPosition;
     
     QString shaderFolder;
+    std::map<QString, QString> fragment_shaders_codes;
+    std::map<QString, QString> vertex_shaders_codes;
     QOpenGLShaderProgram *silhouetteShaderProgram;
     QOpenGLShaderProgram *phongblinnShaderProgram;
     QOpenGLShaderProgram *normalsShaderProgram;
