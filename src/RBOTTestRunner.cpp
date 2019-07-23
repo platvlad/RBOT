@@ -35,8 +35,7 @@ namespace testrunner
         logFileName = resultsFile.parent_path().string() +
                       boost::filesystem::path::preferred_separator +
                       "residuals" +
-                      std::to_string(config.iteration_factor) + ".txt";
-        std::cout << "logFileName = " << logFileName << std::endl;
+                      std::to_string(config.iteration_factor) + ".yml";
 
         getObject(config.mesh);
 
@@ -147,13 +146,17 @@ namespace testrunner
     {
         for (int i = resultPoses.size() + 1; i <= frameNumber; ++i)
         {
-            std::cout << "cycle iteration" << std::endl;
             Pose poseToWrite;
             poseToWrite.pose = cv::Matx44f();
             resultPoses[i] = poseToWrite;
         }
         writePoses(resultPoses, resultsFile);
+        boost::filesystem::path logFile = boost::filesystem::path(logFileName);
+        writeErrors(resultResiduals, logFile);
         boost::filesystem::path resultDir = resultsFile.parent_path();
+        std::string timesFileName = resultDir.string() + boost::filesystem::path::preferred_separator + "times.yml";
+        boost::filesystem::path timesFile = boost::filesystem::path(timesFileName);
+        writeTimes(resultTimes, timesFile);
         std::string videoFileName = resultDir.string() + boost::filesystem::path::preferred_separator + "output.mov";
         boost::filesystem::path videoFilePath(videoFileName);
         boost::filesystem::remove(videoFilePath);
@@ -182,8 +185,8 @@ namespace testrunner
         int timeout = 0;
         bool showHelp = showGui;
 
-        //SingleIterationFrameGetter frameGetter = SingleIterationFrameGetter(videoCapture, poseEstimator);
-        StrictFrameGetter frameGetter = StrictFrameGetter(videoCapture, poseEstimator, 10);
+        SingleIterationFrameGetter frameGetter = SingleIterationFrameGetter(videoCapture, poseEstimator);
+        //StrictFrameGetter frameGetter = StrictFrameGetter(videoCapture, poseEstimator, 10);
         bool firstFrame = true;
         size_t frameCounter = 1;
 
@@ -193,15 +196,19 @@ namespace testrunner
         std::ofstream fout(logFileName);
         while (true)
         {
+            auto start = std::chrono::steady_clock::now();
             IterationResult iteration = frameGetter.getFrame();
-
+            auto end = std::chrono::steady_clock::now();
+            std::chrono::duration<double> timeDiff = end - start;
             if (iteration.isNextFrame && !firstFrame)
             {
                 convertTransformMatrix(bestPose);
                 Pose poseToWrite;
                 poseToWrite.pose = bestPose * T_n;
                 resultPoses[frameCounter] = poseToWrite;
-                fout << bestResidual << std::endl;
+                resultResiduals[frameCounter] = bestResidual;
+                resultTimes[frameCounter] = timeDiff.count();
+                //fout << bestResidual << std::endl;
                 bestResidual = 0.0f;
                 firstFrame = true;
                 ++frameCounter;

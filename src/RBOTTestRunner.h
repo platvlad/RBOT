@@ -34,6 +34,8 @@ namespace testrunner
         std::vector<Object3D*> objects;
         PoseEstimator6D* poseEstimator;
         std::map<int, Pose> resultPoses;
+        std::map<int, float> resultTimes;
+        std::map<int, float> resultResiduals;
         std::vector<cv::Mat> outputFrames;
 
         size_t frameNumber = 0;

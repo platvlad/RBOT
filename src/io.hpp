@@ -25,6 +25,9 @@ void writePoses(std::map<int, Pose> const &poses,
 void writeErrors(std::map<int, float> const &errors,
                  boost::filesystem::path const &dstPath);
 
+void writeTimes(std::map<int, float> const &errors,
+        boost::filesystem::path const &dstPath);
+
 void writeDiameter(float diameter,
                    boost::filesystem::path const &dstPath);
 

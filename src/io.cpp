@@ -271,6 +271,33 @@ void writeErrors(
 }
 
 
+void writeTimes(
+        std::map<int, float> const &times,
+        boost::filesystem::path const &dstPath)
+{
+    YAML::Emitter emitter;
+    emitter << YAML::BeginMap;
+    emitter << YAML::Key << "frames";
+    emitter << YAML::Value;
+    {
+        emitter << YAML::BeginSeq;
+        typedef std::pair<int, float> FrameAndError;
+        BOOST_FOREACH (FrameAndError const &frameAndError, times) {
+            emitter << YAML::BeginMap;
+            emitter << YAML::Key << "frame"
+                << YAML::Value << frameAndError.first;
+            emitter << YAML::Key << "time"
+                << YAML::Value << protectInf(frameAndError.second);
+            emitter << YAML::EndMap;
+        }
+        emitter << YAML::EndSeq;
+    }
+    emitter << YAML::EndMap;
+    boost::filesystem::ofstream dstStream(dstPath);
+    dstStream << emitter.c_str();
+}
+
+
 void writeDiameter(float diameter, boost::filesystem::path const &dstPath)
 {
     YAML::Emitter emitter;
