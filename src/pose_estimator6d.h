@@ -74,7 +74,14 @@ public:
      *  @param  distCoeffs The cameras lens distortion coefficients.
      *  @param  objects A collection of all 3D objects to be tracked.
      */
-    PoseEstimator6D(int width, int height, float zNear, float zFar, const cv::Matx33f &K, const cv::Matx14f &distCoeffs, std::vector<Object3D*> &objects);
+    PoseEstimator6D(int width,
+                    int height,
+                    float zNear,
+                    float zFar,
+                    const cv::Matx33f &K,
+                    const cv::Matx14f &distCoeffs,
+                    std::vector<Object3D*> &objects,
+                    int iteration_factor = 1);
     
     ~PoseEstimator6D();
     
@@ -137,6 +144,7 @@ private:
     bool initialized;
     
     int tmp;
+    int iteration_factor;
     
     void relocalize(Object3D *object, std::vector<cv::Mat> &imagePyramid);
     

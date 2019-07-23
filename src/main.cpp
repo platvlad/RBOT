@@ -33,6 +33,7 @@
  * along with RBOT. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <fstream>
+#include <cstring>
 
 #include <QApplication>
 #include <QThread>
@@ -53,6 +54,16 @@ using namespace cv;
 
 int main(int argc, char *argv[])
 {
+    if (argc < 2)
+    {
+        cout << "Wrong parameters" << endl;
+        return 1;
+    }
+    if (strncmp(argv[1], "tracking", 10) != 0)
+    {
+        cout << "Wrong parameters" << endl;
+        return 0;
+    }
     QApplication a(argc, argv);
     boost::optional<testrunner::TrackingConfig> config = testrunner::parseTrackingArguments(argc, argv);
     if (config)

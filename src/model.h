@@ -41,6 +41,7 @@
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <assimp/include/assimp/mesh.h>
 
 #include "transformations.h"
 
@@ -72,9 +73,9 @@ public:
      *  @param gamma  The models initial Euler angle rotation about Z-axis of the camera.
      *  @param scale  A scaling factor applied to the model in order change its size independent of the original data.
      */
-    Model(const std::string& modelFilename, float tx, float ty, float tz, float alpha, float beta, float gamma, float scale);
+    Model(const std::string& objFilename, float tx, float ty, float tz, float alpha, float beta, float gamma, float scale);
 
-    Model(const std::string& modelFilename, cv::Matx44f modelPose, float scale);
+    Model(const std::string& objFilename, cv::Matx44f modelPose, float scale);
     
     ~Model();
 
@@ -257,14 +258,16 @@ private:
     cv::Vec3f lbn;
     cv::Vec3f rtf;
     float scaling;
-    
-    
+//    size_t polygonSize = 0;
+
     /**
      *  Loads the model data from the specified file.
      *
      *  @param  objFilename The relative path to the OBJ/PLY file.
      */
-    void loadModel(const std::string modelFilename);
+    void loadModel(const std::string& objFilename);
+
+    void loadModel2(const std::string& objFilename);
 };
 
 #endif /* MODEL_H */

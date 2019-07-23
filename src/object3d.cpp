@@ -45,7 +45,7 @@ bool sortDistance(std::pair<float, int> a, std::pair<float, int> b)
     return a.first < b.first;
 }
 
-Object3D::Object3D(const string& objFilename, float tx, float ty, float tz, float alpha, float beta, float gamma,
+Object3D::Object3D(const std::string& objFilename, float tx, float ty, float tz, float alpha, float beta, float gamma,
                    float scale, float qualityThreshold,  vector<float> &templateDistances, int radius) :
                    Model(objFilename, tx, ty, tz, alpha, beta, gamma, scale),
                    qualityThreshold(qualityThreshold),
@@ -57,7 +57,7 @@ Object3D::Object3D(const string& objFilename, float tx, float ty, float tz, floa
     initIcosahedrons();
 }
 
-Object3D::Object3D(const string& objFilename,
+Object3D::Object3D(const std::string& objFilename,
                    cv::Matx44f modelPose,
                    float scale,
                    float qualityThreshold,
@@ -232,7 +232,7 @@ void Object3D::generateTemplates()
             Vec3f v2 = subdivIcosahedron[j];
             
             float d = norm(v1 - v2);
-            distanceMap.push_back(pair<float, int>(d, j));
+            distanceMap.emplace_back(pair<float, int>(d, j));
         }
         
         sort(distanceMap.begin(), distanceMap.end(), sortDistance);

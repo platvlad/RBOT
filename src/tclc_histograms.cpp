@@ -75,7 +75,8 @@ void TCLCHistograms::update(const Mat &frame, const Mat &mask, const Mat &depth,
     
     memset(notNormalizedFG.ptr<int>(), 0, _centersIDs.size()*numBins*numBins*numBins*sizeof(int));
     memset(notNormalizedBG.ptr<int>(), 0, _centersIDs.size()*numBins*numBins*numBins*sizeof(int));
-    
+
+    // why size of centerIds?
     memset(normalizedFG.ptr<float>(), 0, _centersIDs.size()*numBins*numBins*numBins*sizeof(float));
     memset(normalizedBG.ptr<float>(), 0, _centersIDs.size()*numBins*numBins*numBins*sizeof(float));
     

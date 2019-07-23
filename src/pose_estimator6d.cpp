@@ -44,7 +44,14 @@ bool sortTemplateView(std::pair<float, TemplateView*> a, std::pair<float, Templa
 }
 
 
-PoseEstimator6D::PoseEstimator6D(int width, int height, float zNear, float zFar, const cv::Matx33f &K, const cv::Matx14f &distCoeffs, vector<Object3D*> &objects)
+PoseEstimator6D::PoseEstimator6D(int width,
+                                 int height,
+                                 float zNear,
+                                 float zFar,
+                                 const cv::Matx33f &K,
+                                 const cv::Matx14f &distCoeffs,
+                                 vector<Object3D*> &objects,
+                                 int iteration_factor) : iteration_factor(iteration_factor)
 {
     renderingEngine = RenderingEngine::Instance();
     optimizationEngine = new OptimizationEngine(width, height);
@@ -83,13 +90,10 @@ PoseEstimator6D::PoseEstimator6D(int width, int height, float zNear, float zFar,
 
 PoseEstimator6D::~PoseEstimator6D()
 {
-    std::cout << "In pose estimator destructor" << std::endl;
     renderingEngine->destroy();
-    std::cout << "After renderingEngine destroy" << std::endl;
     delete optimizationEngine;
     
     delete SDT2D;
-    std::cout << "Exit PoseEstimator destructor" << std::endl;
 }
 
 
@@ -151,7 +155,7 @@ float PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool c
 
     if(initialized)
     {
-        optimizationEngine->minimize(imagePyramid, objects);
+        optimizationEngine->minimize(imagePyramid, objects, iteration_factor);
         
         renderingEngine->setLevel(0);
         

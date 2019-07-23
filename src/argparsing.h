@@ -11,8 +11,13 @@ namespace testrunner
         boost::filesystem::path groundTruth;
         boost::filesystem::path mesh;
         boost::filesystem::path precalc;
+        bool experimental;
+        bool backTracking;
+        bool toFrame;
+        boost::optional<boost::filesystem::path> fixations;
         boost::optional <boost::filesystem::path> rgb;
         bool showGui;
+        int iteration_factor;
     };
 
     boost::optional <TrackingConfig> parseTrackingArguments(

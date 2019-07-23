@@ -43,10 +43,12 @@
 #include <assimp/mesh.h>
 #include <assimp/postprocess.h>
 
+#include <fstream>
+
 using namespace std;
 using namespace cv;
 
-Model::Model(const string& modelFilename, float tx, float ty, float tz, float alpha, float beta, float gamma,
+Model::Model(const std::string& objFilename, float tx, float ty, float tz, float alpha, float beta, float gamma,
              float scale) : m_id(0),
                             initialized(false),
                             buffersInitialised(false),
@@ -59,21 +61,21 @@ Model::Model(const string& modelFilename, float tx, float ty, float tz, float al
     *Transformations::rotationMatrix(gamma, Vec3f(0, 0, 1))
     *Matx44f::eye();
     T_cm = T_i;
-    init(modelFilename);
+    init(objFilename);
 }
 
-Model::Model(const std::string& modelFilename, cv::Matx44f modelPose, float scale) : m_id(0),
-                                                                                     initialized(false),
-                                                                                     buffersInitialised(false),
-                                                                                     T_i(modelPose),
-                                                                                     T_cm(modelPose),
-                                                                                     scaling(scale),
-                                                                                     hasNormals(false)
+Model::Model(const std::string& objFilename, cv::Matx44f modelPose, float scale) : m_id(0),
+                                                                       initialized(false),
+                                                                       buffersInitialised(false),
+                                                                       T_i(modelPose),
+                                                                       T_cm(modelPose),
+                                                                       scaling(scale),
+                                                                       hasNormals(false)
 {
-    init(modelFilename);
+    init(objFilename);
 }
 
-void Model::init(const std::string& modelFilename)
+void Model::init(const std::string& objFilename)
 {
 
     T_n = Matx44f::eye();
@@ -82,7 +84,7 @@ void Model::init(const std::string& modelFilename)
     normalBuffer = QOpenGLBuffer(QOpenGLBuffer::VertexBuffer);
     indexBuffer = QOpenGLBuffer(QOpenGLBuffer::IndexBuffer);
 
-    loadModel(modelFilename);
+    loadModel(objFilename);
 }
 
 Model::~Model()
@@ -140,6 +142,10 @@ bool Model::isInitialized()
 
 void Model::draw(QOpenGLShaderProgram *program, GLint primitives)
 {
+//    if (polygonSize == 4)
+//    {
+//        primitives = GL_QUADS;
+//    }
     vertexBuffer.bind();
     program->enableAttributeArray("aPosition");
     program->setAttributeBuffer("aPosition", GL_FLOAT, 0, 3, sizeof(Vec3f));
@@ -225,17 +231,81 @@ void Model::setModelID(int i)
 void Model::reset()
 {
     initialized = false;
-    
+
     T_cm = T_i;
 }
 
 
-void Model::loadModel(const string modelFilename)
+void Model::loadModel2(const std::string& objFilename)
 {
     Assimp::Importer importer;
-    
-    const aiScene* scene = importer.ReadFile(modelFilename, aiProcessPreset_TargetRealtime_Fast);
-    
+    const aiScene* scene = importer.ReadFile(objFilename, aiProcessPreset_TargetRealtime_Fast);
+    hasNormals = scene->mMeshes[0]->HasNormals();
+
+    float inf = numeric_limits<float>::infinity();
+    lbn = Vec3f(inf, inf, inf);
+    rtf = Vec3f(-inf, -inf, -inf);
+
+    size_t vertexCount = 0;
+    size_t faceCount = 0;
+    for (int i = 0; i < scene->mNumMeshes; ++i)
+    {
+        aiMesh* mesh = scene->mMeshes[i];
+        for (int j = 0; j < mesh->mNumFaces; ++j)
+        {
+            aiFace f = mesh->mFaces[j];
+            indices.push_back(f.mIndices[0] + vertexCount);
+            indices.push_back(f.mIndices[1] + vertexCount);
+            indices.push_back(f.mIndices[2] + vertexCount);
+        }
+        for (int j = 0; j < mesh->mNumVertices; ++j)
+        {
+            aiVector3D v = mesh->mVertices[j];
+
+            Vec3f p(v.x, v.y, v.z);
+
+            // compute the 3D bounding box of the model
+            if (p[0] < lbn[0]) lbn[0] = p[0];
+            if (p[1] < lbn[1]) lbn[1] = p[1];
+            if (p[2] < lbn[2]) lbn[2] = p[2];
+            if (p[0] > rtf[0]) rtf[0] = p[0];
+            if (p[1] > rtf[1]) rtf[1] = p[1];
+            if (p[2] > rtf[2]) rtf[2] = p[2];
+
+            vertices.push_back(p);
+        }
+
+        if(hasNormals)
+        {
+            for(int j = 0; j < mesh->mNumVertices; ++j)
+            {
+                aiVector3D n = mesh->mNormals[j];
+                Vec3f vn = Vec3f(n.x, n.y, n.z);
+                normals.push_back(vn);
+            }
+        }
+        vertexCount += mesh->mNumVertices;
+        faceCount += mesh->mNumFaces;
+    }
+
+    offsets.push_back(0);
+    offsets.push_back(faceCount * 3);
+    std::cout << "faceCount = " << faceCount << endl;
+    Vec3f bbCenter = (rtf + lbn)/2;
+    std::cout << "bbCenter = " << bbCenter[0] << " " << bbCenter[1] << " " << bbCenter[2] << std::endl;
+    // compute a normalization transform that moves the object to the center of its bounding box and scales it according to the prescribed factor
+    T_n = Transformations::scaleMatrix(scaling)*Transformations::translationMatrix(-bbCenter[0], -bbCenter[1], -bbCenter[2]);
+    std::cout << "T_n = " << T_n << std::endl;
+}
+
+
+void Model::loadModel(const std::string& objFilename)
+{
+    Assimp::Importer importer;
+
+    const aiScene* scene = importer.ReadFile(objFilename, aiProcessPreset_TargetRealtime_Fast);
+
+
     aiMesh *mesh = scene->mMeshes[0];
     
     hasNormals = mesh->HasNormals();
@@ -243,11 +313,22 @@ void Model::loadModel(const string modelFilename)
     float inf = numeric_limits<float>::infinity();
     lbn = Vec3f(inf, inf, inf);
     rtf = Vec3f(-inf, -inf, -inf);
-    
+
     for(int i = 0; i < mesh->mNumFaces; i++)
     {
         aiFace f = mesh->mFaces[i];
-        
+//        if (polygonSize < f.mNumIndices)
+//        {
+//            if (polygonSize > 0)
+//            {
+//                cout << "Achtung!" << endl;
+//            }
+//            polygonSize = f.mNumIndices;
+//        }
+//        for (int j = 0; j < f.mNumIndices; ++j)
+//        {
+//            indices.push_back(f.mIndices[j]);
+//        }
         indices.push_back(f.mIndices[0]);
         indices.push_back(f.mIndices[1]);
         indices.push_back(f.mIndices[2]);
@@ -284,12 +365,13 @@ void Model::loadModel(const string modelFilename)
     
     offsets.push_back(0);
     offsets.push_back(mesh->mNumFaces*3);
-    
+    cout << "mNumFaces = " << mesh->mNumFaces << endl;
     // the center of the 3d bounding box
     Vec3f bbCenter = (rtf + lbn)/2;
-    
+    std::cout << "bbCenter = " << bbCenter[0] << " " << bbCenter[1] << " " << bbCenter[2] << std::endl;
     // compute a normalization transform that moves the object to the center of its bounding box and scales it according to the prescribed factor
     T_n = Transformations::scaleMatrix(scaling)*Transformations::translationMatrix(-bbCenter[0], -bbCenter[1], -bbCenter[2]);
-    
+
+    std::cout << "T_n = " << T_n << std::endl;
     // T_n = Transformations::scaleMatrix(scaling);
 }

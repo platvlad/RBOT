@@ -88,7 +88,6 @@ void RenderingEngine::destroy()
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindRenderbuffer(GL_RENDERBUFFER, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    std::cout << "In rendering engine destroy before deleting instance" << std::endl;
     delete instance;
     instance = NULL;
 }
@@ -397,6 +396,8 @@ void RenderingEngine::renderShaded(vector<Model*> models, GLenum polyonMode, con
     glViewport(0, 0, width, height);
     
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
     
     for(int i = 0; i < models.size(); i++)
     {

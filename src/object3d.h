@@ -68,7 +68,7 @@ public:
      *  @param qualityThreshold  The individual quality tracking quality threshold used to decide whether tracking and detection have been successful (should be within [0.5,0.6]).
      *  @param templateDistances  A vector of absolute Z-distance values to be used for template generation (typically 3 values: a close, an intermediate and a far distance)
      */
-    Object3D(const std::string& objFilename,
+    Object3D(const std::string& modelFilename,
              float tx, float ty, float tz,
              float alpha, float beta, float gamma,
              float scale,
@@ -76,7 +76,7 @@ public:
              std::vector<float> &templateDistances,
              int radius);
 
-    Object3D(const std::string& objFilename,
+    Object3D(const std::string& modelFilename,
              cv::Matx44f modelPose,
              float scale,
              float qualityThreshold,
