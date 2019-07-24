@@ -31,6 +31,7 @@ namespace testrunner
         zNear = distanceToObject * 0.01;
         zFar = distanceToObject * 100;
         distances = {0.5f * distanceToObject, distanceToObject, 1.5f * distanceToObject};
+        // distances = {0.0f, 0.0f, 0.0f};
 
         logFileName = resultsFile.parent_path().string() +
                       boost::filesystem::path::preferred_separator +
@@ -107,8 +108,8 @@ namespace testrunner
     {
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(path.string(), aiProcessPreset_TargetRealtime_Fast);
-        aiMesh* mesh = scene->mMeshes[0];
-        cv::Vec3f bbCenter = boundingBoxCenter(mesh);
+        aiMesh** meshes = scene->mMeshes;
+        cv::Vec3f bbCenter = boundingBoxCenter(meshes, scene->mNumMeshes);
         T_n = Transformations::scaleMatrix(scaling)*Transformations::translationMatrix(-bbCenter[0], -bbCenter[1], -bbCenter[2]);
         T_n_inv = T_n.inv();
         groundTruth = groundTruth * T_n_inv;
@@ -287,25 +288,29 @@ namespace testrunner
 
 
 
-    cv::Vec3f RBOTTestRunner::boundingBoxCenter(aiMesh* mesh)
+    cv::Vec3f RBOTTestRunner::boundingBoxCenter(aiMesh** meshes, size_t meshNumber)
     {
         float inf = std::numeric_limits<float>::infinity();
         cv::Vec3f lbn = cv::Vec3f(inf, inf, inf);
         cv::Vec3f rtf = cv::Vec3f(-inf, -inf, -inf);
-        for(int i = 0; i < mesh->mNumVertices; i++)
+        for (int i = 0; i < meshNumber; ++i)
         {
-            aiVector3D v = mesh->mVertices[i];
+            aiMesh* mesh = meshes[i];
+            for (int j = 0; j < mesh->mNumVertices; j++)
+            {
+                aiVector3D v = mesh->mVertices[j];
 
-            cv::Vec3f p(v.x, v.y, v.z);
+                cv::Vec3f p(v.x, v.y, v.z);
 
-            // compute the 3D bounding box of the model
-            if (p[0] < lbn[0]) lbn[0] = p[0];
-            if (p[1] < lbn[1]) lbn[1] = p[1];
-            if (p[2] < lbn[2]) lbn[2] = p[2];
-            if (p[0] > rtf[0]) rtf[0] = p[0];
-            if (p[1] > rtf[1]) rtf[1] = p[1];
-            if (p[2] > rtf[2]) rtf[2] = p[2];
+                // compute the 3D bounding box of the model
+                if (p[0] < lbn[0]) lbn[0] = p[0];
+                if (p[1] < lbn[1]) lbn[1] = p[1];
+                if (p[2] < lbn[2]) lbn[2] = p[2];
+                if (p[0] > rtf[0]) rtf[0] = p[0];
+                if (p[1] > rtf[1]) rtf[1] = p[1];
+                if (p[2] > rtf[2]) rtf[2] = p[2];
 
+            }
         }
 
         cv::Vec3f bbCenter = (rtf + lbn)/2;

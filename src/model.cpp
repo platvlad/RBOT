@@ -236,7 +236,7 @@ void Model::reset()
 }
 
 
-void Model::loadModel2(const std::string& objFilename)
+void Model::loadModel(const std::string& objFilename)
 {
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile(objFilename, aiProcessPreset_TargetRealtime_Fast);
@@ -299,7 +299,7 @@ void Model::loadModel2(const std::string& objFilename)
 }
 
 
-void Model::loadModel(const std::string& objFilename)
+void Model::loadModel2(const std::string& objFilename)
 {
     Assimp::Importer importer;
 

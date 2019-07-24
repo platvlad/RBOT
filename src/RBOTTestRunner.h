@@ -60,7 +60,7 @@ namespace testrunner
 
         void writeResult();
 
-        static cv::Vec3f boundingBoxCenter(aiMesh* mesh);
+        static cv::Vec3f boundingBoxCenter(aiMesh** meshes, size_t meshNumber);
 
         cv::Matx33f convertCameraMatrix(const cv::Matx44f& matrix4);
 
