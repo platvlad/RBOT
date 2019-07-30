@@ -89,6 +89,7 @@ void OptimizationEngine::runIteration(vector<Object3D*>& objects, const vector<M
     renderingEngine->setLevel(level);
     
     int numInitialized = 0;
+//    int area_threshold = 3000 * width * height / (640 * 512);
     
     // increase the image pyramid level until the area of the 2D bounding box
     // of every object is greater than 3000 pixels in the image
