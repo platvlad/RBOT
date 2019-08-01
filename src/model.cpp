@@ -69,6 +69,7 @@ Model::Model(const std::string& objFilename, cv::Matx44f modelPose, float scale)
                                                                        buffersInitialised(false),
                                                                        T_i(modelPose),
                                                                        T_cm(modelPose),
+                                                                       T_prev(modelPose),
                                                                        scaling(scale),
                                                                        hasNormals(false)
 {
@@ -233,6 +234,14 @@ void Model::reset()
     initialized = false;
 
     T_cm = T_i;
+}
+
+
+void Model::moveInertially()
+{
+    Matx44f T_diff = T_prev.inv() * T_cm;
+    T_prev = T_cm;
+    T_cm = T_cm * T_diff;
 }
 
 

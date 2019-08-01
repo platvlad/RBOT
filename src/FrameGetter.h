@@ -30,9 +30,9 @@ public:
 
     virtual ~FrameGetter() = default;
 
-    virtual IterationResult getFrame() = 0;
+    virtual IterationResult getFrame(int frameCounter) = 0;
 
-    bool runToggleTracking = false;
+    bool runToggleTracking = true;
 
 
 

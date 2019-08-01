@@ -18,7 +18,7 @@ EnhancingFrameGetter::~EnhancingFrameGetter()
     delete [] residualBuffer;
 }
 
-IterationResult EnhancingFrameGetter::getFrame()
+IterationResult EnhancingFrameGetter::getFrame(int frameCounter)
 {
     size_t nextBufferIndex = (bufferIndex + 1) % bufferSize;
     if ((residualBuffer[bufferIndex] >= residualBuffer[nextBufferIndex] &&        // not better than 10 iterations before

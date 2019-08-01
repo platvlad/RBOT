@@ -81,6 +81,7 @@ public:
                     const cv::Matx33f &K,
                     const cv::Matx14f &distCoeffs,
                     std::vector<Object3D*> &objects,
+                    std::map<int, cv::Matx44f> groundTruth,
                     int iteration_factor = 1);
     
     ~PoseEstimator6D();
@@ -97,6 +98,8 @@ public:
      *  @param  undistortFrame A flag indicating whether the image should first be undistorted for initialization (default = true).
      */
     void toggleTracking(cv::Mat &frame, int objectIndex, bool undistortFrame = true);
+
+    float evaluateEnergyByPose(const cv::Mat& frame, const cv::Matx44f& pose);
     
     /**
      *  This method tries to track and detect the 6DOF poses of all
@@ -114,7 +117,7 @@ public:
      *  @param undistortFrame A flag indicating whether the image should first be undistorted for initialization (default = true).
      *  @param undistortFrame A flag indicating whether it should be checked for a tracking loss after pose estimation (default = true).
      */
-    float estimatePoses(cv::Mat &frame, bool undistortFrame = true, bool checkForLoss = true);
+    float estimatePoses(cv::Mat &frame, int frameCounter, bool undistortFrame = true, bool checkForLoss = true);
     
     /**
      *  Resets/stops pose tracking for all objects by clearing the
@@ -145,15 +148,16 @@ private:
     
     int tmp;
     int iteration_factor;
+    std::map<int, cv::Matx44f> groundTruth;
     
     void relocalize(Object3D *object, std::vector<cv::Mat> &imagePyramid);
     
     cv::Rect computeBoundingBox(const std::vector<cv::Point3i> &centersIDs, int offset, int level, const cv::Size &maxSize);
     
     float evaluateEnergyFunction(Object3D *object, const cv::Mat &binned, int level, int threads);
-    
+
     float evaluateEnergyFunction(Object3D *object, const cv::Mat &mask, const cv::Mat &depth, const cv::Mat &binned, int level, int threads);
-    
+
     float evaluateEnergyFunction(TCLCHistograms *tclcHistograms, const std::vector<cv::Point3i> &centersIDs, const cv::Mat &binned, const cv::Mat &heaviside, const cv::Rect &roi, int offsetX, int offsetY, int level, int threads);
     
     float evaluateEnergyFunction_local(TCLCHistograms *tclcHistograms, const std::vector<cv::Point3i> &centersIDs, const cv::Mat &binned, const cv::Mat &heaviside, const cv::Rect &roi, int offsetX, int offsetY, int level);

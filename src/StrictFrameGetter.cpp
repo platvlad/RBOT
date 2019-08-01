@@ -9,7 +9,8 @@ StrictFrameGetter::StrictFrameGetter(const cv::VideoCapture& videoCapture,
 {
 }
 
-IterationResult StrictFrameGetter::getFrame(){
+IterationResult StrictFrameGetter::getFrame(int frameCounter)
+{
     bool isNextFrame = false;
     if (videoCapture.isOpened() && currentIteration == 0)
     {

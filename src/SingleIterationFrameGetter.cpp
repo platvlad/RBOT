@@ -6,7 +6,7 @@ SingleIterationFrameGetter::SingleIterationFrameGetter(const cv::VideoCapture& v
 {
 }
 
-IterationResult SingleIterationFrameGetter::getFrame()
+IterationResult SingleIterationFrameGetter::getFrame(int frameCounter)
 {
     if (videoCapture.isOpened())
     {
@@ -18,12 +18,12 @@ IterationResult SingleIterationFrameGetter::getFrame()
         if (runToggleTracking)
         {
             poseEstimator->toggleTracking(lastFrame, 0, false);
-            residual = poseEstimator->estimatePoses(lastFrame, false, false);
+//            residual = poseEstimator->estimatePoses(lastFrame, frameCounter, false, false);
             runToggleTracking = false;
         }
         else
         {
-            residual = poseEstimator->estimatePoses(lastFrame, false, true);
+            residual = poseEstimator->estimatePoses(lastFrame, frameCounter + 1, false, true);
         }
     }
     return IterationResult(lastFrame, residual, true);

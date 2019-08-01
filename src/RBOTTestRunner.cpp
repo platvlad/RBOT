@@ -41,7 +41,7 @@ namespace testrunner
         getObject(config.mesh);
 
         cv::Matx14f distCoeffs =  cv::Matx14f(0.0, 0.0, 0.0, 0.0);
-        poseEstimator = new PoseEstimator6D(width, height, zNear, zFar, camera, distCoeffs, objects, config.iteration_factor);
+        poseEstimator = new PoseEstimator6D(width, height, zNear, zFar, camera, distCoeffs, objects, groundTruthSequence, config.iteration_factor);
 
     }
 
@@ -102,6 +102,12 @@ namespace testrunner
         groundTruth = poses[1].pose;
         frameNumber = poses.size();
         convertTransformMatrix(groundTruth);
+        for (int i = 1; i <= frameNumber; ++i)
+        {
+            cv::Matx44f sequenceElem = poses[i].pose;
+            convertTransformMatrix(sequenceElem);
+            groundTruthSequence[i] = sequenceElem;
+        }
     }
 
     void RBOTTestRunner::getMesh(const boost::filesystem::path& path)
@@ -197,8 +203,13 @@ namespace testrunner
         std::ofstream fout(logFileName);
         while (true)
         {
+            std::cout << "frameCounter = " << frameCounter << std::endl;
+            if (frameCounter == 40)
+            {
+                std::cout << "Here" << std::endl;
+            }
             auto start = std::chrono::steady_clock::now();
-            IterationResult iteration = frameGetter.getFrame();
+            IterationResult iteration = frameGetter.getFrame(frameCounter);
             auto end = std::chrono::steady_clock::now();
             std::chrono::duration<double> timeDiff = end - start;
             if (iteration.isNextFrame && !firstFrame)
@@ -234,8 +245,6 @@ namespace testrunner
             }
             if (showGui)
             {
-
-
                 if(showHelp)
                 {
                     putText(sum, "Press '1' to initialize",
@@ -257,7 +266,8 @@ namespace testrunner
                 int key = cv::waitKey(timeout);
                 if (key == (int)'1')
                 {
-                    frameGetter.runToggleTracking = true;
+                    //frameGetter.runToggleTracking = true;
+                    //frameGetter.runToggleTracking = !frameGetter.runToggleTracking;
                     timeout = 1;
                     showHelp = !showHelp;
                     continue;
@@ -273,7 +283,8 @@ namespace testrunner
             }
             else if (frameCounter == 1)
             {
-                frameGetter.runToggleTracking = true;
+                // frameGetter.runToggleTracking = true;
+                frameGetter.runToggleTracking = false;
             }
         }
         std::cout << "Frame counter = " << frameCounter << std::endl;

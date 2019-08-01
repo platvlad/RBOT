@@ -11,6 +11,6 @@ public:
 
     ~SingleIterationFrameGetter() override = default;
 
-    IterationResult getFrame() override;
+    IterationResult getFrame(int frameCounter) override;
 };
 #endif //RBOT_SINGLEITERATIONFRAMEGETTER_H

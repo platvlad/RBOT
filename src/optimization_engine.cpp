@@ -34,6 +34,7 @@
  */
 
 #include "optimization_engine.h"
+#include "pose_estimator6d.h"
 
 using namespace std;
 using namespace cv;
@@ -57,6 +58,11 @@ OptimizationEngine::~OptimizationEngine()
 
 void OptimizationEngine::minimize(vector<Mat>& imagePyramid, vector<Object3D*>& objects, int runs)
 {
+    for (int i = 0; i < objects.size(); ++i)
+    {
+        objects[i]->moveInertially();
+    }
+
     // OPTIMIZATION ITERATIONS
     
     // level 2
@@ -64,7 +70,7 @@ void OptimizationEngine::minimize(vector<Mat>& imagePyramid, vector<Object3D*>& 
     {
         runIteration(objects, imagePyramid, 2);
     }
-    
+
     // level 1
     for(int iter = 0; iter < runs*2; iter++)
     {
@@ -77,7 +83,6 @@ void OptimizationEngine::minimize(vector<Mat>& imagePyramid, vector<Object3D*>& 
         runIteration(objects, imagePyramid, 0);
     }
 }
-
 
 
 void OptimizationEngine::runIteration(vector<Object3D*>& objects, const vector<Mat>& imagePyramid, int level)
@@ -168,6 +173,12 @@ void OptimizationEngine::runIteration(vector<Object3D*>& objects, const vector<M
             applyStepGaussNewton(objects[o], wJTJ, JT);
         }
     }
+
+//    mask = renderingEngine->downloadFrame(RenderingEngine::MASK);
+//    depth = renderingEngine->downloadFrame(RenderingEngine::DEPTH);
+//    Mat binned;
+//    parallel_for_(cv::Range(0, 8), Parallel_For_convertToBins(imagePyramid[0], binned, objects[0]->getTCLCHistograms()->getNumBins(), 8));
+//    float e = poseEstimator.evaluateEnergyFunction(objects[0], mask, depth, binned, 0, 8);
 }
 
 

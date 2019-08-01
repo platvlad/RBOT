@@ -230,6 +230,8 @@ public:
      *  and initialization state to false.
      */
     void reset();
+
+    void moveInertially();
     
 private:
     int m_id;
@@ -239,6 +241,8 @@ private:
     cv::Matx44f T_cm;
     
     cv::Matx44f T_n;
+
+    cv::Matx44f T_prev;
     
     bool initialized;
     

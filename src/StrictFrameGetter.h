@@ -12,7 +12,7 @@ public:
 
     ~StrictFrameGetter() override = default;
 
-    IterationResult getFrame() override;
+    IterationResult getFrame(int frameCounter) override;
 private:
     size_t numOfIterations;
     size_t currentIteration;

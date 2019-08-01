@@ -12,7 +12,7 @@ public:
 
     ~EnhancingFrameGetter() override;
 
-    IterationResult getFrame() override;
+    IterationResult getFrame(int frameCounter) override;
 private:
     const size_t bufferSize;
     float* residualBuffer;

@@ -33,6 +33,7 @@
  * along with RBOT. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <opencv4/opencv2/highgui.hpp>
 #include "pose_estimator6d.h"
 
 using namespace std;
@@ -51,7 +52,9 @@ PoseEstimator6D::PoseEstimator6D(int width,
                                  const cv::Matx33f &K,
                                  const cv::Matx14f &distCoeffs,
                                  vector<Object3D*> &objects,
-                                 int iteration_factor) : iteration_factor(iteration_factor)
+                                 std::map<int, cv::Matx44f> groundTruth,
+                                 int iteration_factor) : iteration_factor(iteration_factor),
+                                                         groundTruth(groundTruth)
 {
     renderingEngine = RenderingEngine::Instance();
     optimizationEngine = new OptimizationEngine(width, height);
@@ -135,7 +138,45 @@ void PoseEstimator6D::toggleTracking(cv::Mat &frame, int objectIndex, bool undis
     }
 }
 
-float PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool checkForLoss)
+cv::Matx44f plus(cv::Matx44f a, cv::Matx44f b)
+{
+    return a + b;
+}
+
+cv::Matx44f minus(cv::Matx44f a, cv::Matx44f b)
+{
+    return a - b;
+}
+
+cv::Matx44f mult(float k, cv::Matx44f a)
+{
+    return k * a;
+}
+
+cv::Matx44f unMin(cv::Matx44f a)
+{
+    return -a;
+}
+
+
+
+float PoseEstimator6D::evaluateEnergyByPose(const cv::Mat& frame, const cv::Matx44f& pose)
+{
+    objects[0]->setPose(pose);
+    renderingEngine->setLevel(0);
+
+    renderingEngine->renderSilhouette(vector<Model*>(objects.begin(), objects.end()), GL_FILL);
+
+    Mat mask = renderingEngine->downloadFrame(RenderingEngine::MASK);
+    Mat depth = renderingEngine->downloadFrame(RenderingEngine::DEPTH);
+
+    Mat binned;
+    parallel_for_(cv::Range(0, 8), Parallel_For_convertToBins(frame, binned, objects[0]->getTCLCHistograms()->getNumBins(), 8));
+    float e = evaluateEnergyFunction(objects[0], mask, depth, binned, 0, 8);
+    return e;
+}
+
+float PoseEstimator6D::estimatePoses(cv::Mat &frame, int frameCounter, bool undistortFrame, bool checkForLoss)
 {
     if(undistortFrame)
         remap(frame, frame, map1, map2, INTER_LINEAR);
@@ -169,14 +210,50 @@ float PoseEstimator6D::estimatePoses(cv::Mat &frame, bool undistortFrame, bool c
         
         Mat binned;
         parallel_for_(cv::Range(0, 8), Parallel_For_convertToBins(frame, binned, objects[0]->getTCLCHistograms()->getNumBins(), 8));
-        
+
+
+        cv::Matx44f eps00 = cv::Matx44f();
+        eps00(0, 0) = 0.001;
+        cv::Matx44f eps01 = cv::Matx44f();
+        eps01(0, 1) = 0.001;
+        cv::Matx44f eps02 = cv::Matx44f();
+        eps02(0, 2) = 0.001;
+        cv::Matx44f eps03 = cv::Matx44f();
+        eps03(0, 3) = 0.001;
+        cv::Matx44f eps10 = cv::Matx44f();
+        eps10(1, 0) = 0.001;
+        cv::Matx44f eps11 = cv::Matx44f();
+        eps11(1, 1) = 0.001;
+        cv::Matx44f eps12 = cv::Matx44f();
+        eps12(1, 2) = 0.001;
+        cv::Matx44f eps13 = cv::Matx44f();
+        eps13(1, 3) = 0.001;
+        cv::Matx44f eps20 = cv::Matx44f();
+        eps20(2, 0) = 0.001;
+        cv::Matx44f eps21 = cv::Matx44f();
+        eps21(2, 1) = 0.001;
+        cv::Matx44f eps22 = cv::Matx44f();
+        eps22(2, 2) = 0.001;
+        cv::Matx44f eps23 = cv::Matx44f();
+        eps23(2, 3) = 0.001;
+
+
         for(int i = 0; i < objects.size(); i++)
         {
             if(objects[i]->isInitialized())
             {
                 if(!objects[i]->isTrackingLost())
                 {
+                    cv::Matx44f ground_truth = cv::Matx44f(-0.3810898522543513, 0.9242182011475422, 0.024315451391202336, 0.045087,
+                                                         0.37660185399431406, 0.17919893561710237, -0.908877761330831, 0.047118,
+                                                         -0.8443586726485386, -0.33720684770819653, -0.41635318394591286, 0.789987,
+                                                         0, 0, 0, 1);
+                    cv::Matx44f oldPose = objects[0]->getPose();
                     float e = evaluateEnergyFunction(objects[i], mask, depth, binned, 0, 8);
+                    float realError = evaluateEnergyByPose(frame, groundTruth[frameCounter]);
+                    cout << realError << endl;
+
+                    objects[0]->setPose(oldPose);
                     if (i == 0)
                     {
                         firstObjectResidual = e;

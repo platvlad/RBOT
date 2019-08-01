@@ -37,6 +37,7 @@ namespace testrunner
         std::map<int, float> resultTimes;
         std::map<int, float> resultResiduals;
         std::vector<cv::Mat> outputFrames;
+        std::map<int, cv::Matx44f> groundTruthSequence;
 
         size_t frameNumber = 0;
         size_t width = 0;
