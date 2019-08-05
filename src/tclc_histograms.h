@@ -39,6 +39,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <iostream>
+#include <fstream>
 
 class Model;
 
@@ -225,6 +226,8 @@ private:
     int* _sumsFBData;
     
     int _threads;
+
+
     
 public:
     Parallel_For_buildLocalHistograms(const cv::Mat &frame, const cv::Mat &mask, const std::vector<cv::Point3i> &centers, float radius, int numBins, cv::Mat &localHistogramsFG, cv::Mat &localHistogramsBG, cv::Mat &sumsFB, int m_id, int threads)
@@ -260,6 +263,7 @@ public:
         _sumsFBData = (int*)_sumsFB.ptr<int>();
         
         _threads = threads;
+
     }
     
     void processLine(uchar *frameRow, uchar* maskRow, int xl, int xr, int* localHistogramFG, int* localHistogramBG, int* sumFB) const
@@ -278,7 +282,7 @@ public:
             gu = (frame_ptr[1] >> _binShift);
             bu = (frame_ptr[2] >> _binShift);
             pidx = (ru * _numBins + gu) * _numBins + bu;
-            
+
             if(*mask_ptr == _m_id)
             {
                 localHistogramFG[pidx]++;

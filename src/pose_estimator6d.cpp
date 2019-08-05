@@ -176,6 +176,28 @@ float PoseEstimator6D::evaluateEnergyByPose(const cv::Mat& frame, const cv::Matx
     return e;
 }
 
+
+void PoseEstimator6D::plotResiduals(cv::Mat& frame, cv::Matx44f& pose)
+{
+    vector<float> result;
+    Matx44f directions[6];
+    for (int koef = -100; koef < 100; ++koef)
+    {
+        directions[0] = Transformations::rotationMatrix(koef * 0.05f, {1, 0, 0});
+        directions[1] = Transformations::rotationMatrix(koef * 0.05, {0, 1, 0});
+        directions[2] = Transformations::rotationMatrix(koef * 0.05, {0, 0, 1});
+        directions[3] = Transformations::translationMatrix(koef * 0.0002, 0, 0);
+        directions[4] = Transformations::translationMatrix(0, koef * 0.0002, 0);
+        directions[5] = Transformations::translationMatrix(0, 0, koef * 0.0002);
+        for (int i = 0; i < 6; ++i)
+        {
+            Matx44f &direction = directions[i];
+            plots[i][koef + 100] = evaluateEnergyByPose(frame, pose * direction);
+        }
+    }
+}
+
+
 float PoseEstimator6D::estimatePoses(cv::Mat &frame, int frameCounter, bool undistortFrame, bool checkForLoss)
 {
     if(undistortFrame)
@@ -244,14 +266,18 @@ float PoseEstimator6D::estimatePoses(cv::Mat &frame, int frameCounter, bool undi
             {
                 if(!objects[i]->isTrackingLost())
                 {
-                    cv::Matx44f ground_truth = cv::Matx44f(-0.3810898522543513, 0.9242182011475422, 0.024315451391202336, 0.045087,
+                    Matx44f ground_truth = cv::Matx44f(-0.3810898522543513, 0.9242182011475422, 0.024315451391202336, 0.045087,
                                                          0.37660185399431406, 0.17919893561710237, -0.908877761330831, 0.047118,
                                                          -0.8443586726485386, -0.33720684770819653, -0.41635318394591286, 0.789987,
                                                          0, 0, 0, 1);
                     cv::Matx44f oldPose = objects[0]->getPose();
                     float e = evaluateEnergyFunction(objects[i], mask, depth, binned, 0, 8);
                     float realError = evaluateEnergyByPose(frame, groundTruth[frameCounter]);
-                    cout << realError << endl;
+                    if (writePlotData)
+                    {
+                        plotResiduals(frame, oldPose);
+                    }
+                    cout << e << ' ' << realError << endl;
 
                     objects[0]->setPose(oldPose);
                     if (i == 0)
@@ -493,7 +519,11 @@ float PoseEstimator6D::evaluateEnergyFunction(Object3D *object, const Mat &mask,
     tclcHistograms->updateCentersAndIds(mask, depth, K, zNear, zFar, 0);
     
     vector<Point3i> centersIDs = tclcHistograms->getCentersAndIDs();
-    
+    // ofstream fout("/Users/vladislav.platonov/repo/RBOT2/RBOT/data/opt_tracking_small/opt_tracking/ironman/ir_ir_5_r/centers2.1.txt");
+//    for (auto center : centersIDs)
+//    {
+//        fout << center.x << ' ' << center.y << ' ' << center.z << endl;
+//    }
     if(centersIDs.size() > 0)
     {
         Rect roi = computeBoundingBox(centersIDs, tclcHistograms->getRadius(), 0, binned.size());
@@ -506,8 +536,10 @@ float PoseEstimator6D::evaluateEnergyFunction(Object3D *object, const Mat &mask,
         
         Mat heaviside;
         parallel_for_(cv::Range(0, 8), Parallel_For_convertToHeaviside(sdt, heaviside, 8));
-        
+        // imwrite("/Users/vladislav.platonov/repo/RBOT2/RBOT/data/opt_tracking_small/opt_tracking/ironman/ir_ir_5_r/mask2.1.png", mask);
+        // imwrite("/Users/vladislav.platonov/repo/RBOT2/RBOT/data/opt_tracking_small/opt_tracking/ironman/ir_ir_5_r/binned2.png", binned);
         return evaluateEnergyFunction(tclcHistograms, centersIDs, binned, heaviside, roi, roi.x, roi.y, level, 8);
+
     }
     else
         return 0.0f;

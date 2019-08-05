@@ -291,12 +291,20 @@ public:
             for(int i = 1; i < _roi.width-1; i++, idx++)
             {
                 float dist = sdtData[idx];
-                
-                if(fabs(dist) <= 8.0f)
+                if (2 > fabs(dist) && fabs(dist) > 0 && dist > 1.23)
+                {
+
+                }
+
+                if(fabs(dist) <= 8.0f/* && (dist > 1.23f || dist < -0.23f)*/)
                 {
                     // the smoothed Heaviside value for this signed distance
                     float heaviside = 1.0f/float(CV_PI)*(-atan(dist*s)) + 0.5f;
-                    
+
+                    float heaviside1 = 1.0f/float(CV_PI)*(-atan(1.0f*s)) + 0.5f;
+
+                    float heavisidem1 = 1.0f/float(CV_PI)*(-atan((-1.0f)*s)) + 0.5f;
+
                     // the corresponding smoothed dirac delta value
                     float dirac = (1.0f / float(CV_PI)) * (s/(dist*s2*dist + 1.0f));
                     

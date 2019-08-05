@@ -35,6 +35,7 @@
 
 #include "tclc_histograms.h"
 #include "model.h"
+#include <opencv2/opencv.hpp>
 
 using namespace std;
 using namespace cv;
@@ -85,6 +86,8 @@ void TCLCHistograms::update(const Mat &frame, const Mat &mask, const Mat &depth,
     parallel_for_(cv::Range(0, threads), Parallel_For_buildLocalHistograms(frame, mask, _centersIDs, radius, numBins, notNormalizedFG, notNormalizedBG, sumsFB, _model->getModelID(), threads));
     
     parallel_for_(cv::Range(0, threads), Parallel_For_mergeLocalHistograms(notNormalizedFG, notNormalizedBG, normalizedFG, normalizedBG, initialized, _centersIDs, sumsFB, 0.1f, 0.2f, threads));
+
+    imwrite("/Users/vladislav.platonov/repo/RBOT2/RBOT/data/opt_tracking_small/opt_tracking/ironman/ir_ir_5_r/mask.png", mask);
 }
 
 void TCLCHistograms::updateCentersAndIds(const cv::Mat &mask, const cv::Mat &depth, const cv::Matx33f &K, float zNear, float zFar, int level)

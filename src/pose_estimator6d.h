@@ -99,6 +99,8 @@ public:
      */
     void toggleTracking(cv::Mat &frame, int objectIndex, bool undistortFrame = true);
 
+    void plotResiduals(cv::Mat& frame, cv::Matx44f& pose);
+
     float evaluateEnergyByPose(const cv::Mat& frame, const cv::Matx44f& pose);
     
     /**
@@ -143,7 +145,11 @@ private:
     SignedDistanceTransform2D *SDT2D;
     
     cv::Mat lastFrame;
-    
+
+public:
+    float plots[6][200];
+    bool writePlotData = false;
+private:
     bool initialized;
     
     int tmp;
@@ -265,8 +271,8 @@ public:
                 
                 int px = i+_offsetX;
                 int py = j+_offsetY;
-                
-                if(hsVal >= 0.0f && py >= 0 && py < fullHeight && px >= 0 && px < fullWidth)
+
+                if(hsVal >= 0.0f /*&& (hsVal <= 0.2f || hsVal >= 0.6f)*/ && py >= 0 && py < fullHeight && px >= 0 && px < fullWidth)
                 {
                     int pIdx = py * fullWidth + px;
                     
@@ -312,6 +318,11 @@ public:
                         
                         e[0] += -log(hsVal * (pYFVal - pYBVal) + pYBVal);
                         e[1] += 1.0f;
+                        float current_residual = -log(hsVal * (pYFVal - pYBVal) + pYBVal);
+//                        if (current_residual > 0.65)
+//                        {
+//                            std::cout << "x = " + std::to_string( i + _roi.x) + "; y = " + std::to_string( j + _roi.y) + "\n";
+//                        }
                     }
                 }
             }

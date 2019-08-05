@@ -82,6 +82,7 @@ void OptimizationEngine::minimize(vector<Mat>& imagePyramid, vector<Object3D*>& 
     {
         runIteration(objects, imagePyramid, 0);
     }
+
 }
 
 

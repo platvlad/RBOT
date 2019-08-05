@@ -119,6 +119,10 @@ namespace testrunner
         T_n = Transformations::scaleMatrix(scaling)*Transformations::translationMatrix(-bbCenter[0], -bbCenter[1], -bbCenter[2]);
         T_n_inv = T_n.inv();
         groundTruth = groundTruth * T_n_inv;
+        for (int i = 1; i <= frameNumber; ++i)
+        {
+            groundTruthSequence[i] = groundTruthSequence[i] * T_n_inv;
+        }
     }
 
     void RBOTTestRunner::getVideo(const boost::filesystem::path& filePath)
@@ -181,6 +185,31 @@ namespace testrunner
     }
 
 
+    void RBOTTestRunner::writePlots(int frameCounter)
+    {
+        boost::filesystem::path resultDir = resultsFile.parent_path();
+        for (int i = 0; i < 6; ++i)
+        {
+            boost::filesystem::path residualsFile = resultDir.string() +
+                                                    boost::filesystem::path::preferred_separator +
+                                                    "plots" +
+                                                    boost::filesystem::path::preferred_separator +
+                                                    "plot" +
+                                                    std::to_string(frameCounter) +
+                                                    "_" +
+                                                    std::to_string(i) +
+                                                    ".yml";
+            std::map<int, float> errors;
+            for (int j = 1; j <= 200; ++j)
+            {
+                errors[j] = poseEstimator->plots[i][j - 1];
+            }
+            writeErrors(errors, residualsFile);
+        }
+
+    }
+
+
     void RBOTTestRunner::runTest()
     {
         // move the OpenGL context for offscreen rendering to the current thread, if run in a seperate QT worker thread
@@ -230,6 +259,7 @@ namespace testrunner
                 bestResidual = iteration.residual;
                 bestPose = objects[0]->getPose();
             }
+
             firstFrame = false;
             cv::Mat frame = iteration.frame;
             if (frame.empty())
@@ -242,6 +272,11 @@ namespace testrunner
             if (iteration.isNextFrame)
             {
                 outputFrames.push_back(sum);
+                if (poseEstimator->writePlotData)
+                {
+                    writePlots(frameCounter);
+                    poseEstimator->writePlotData = false;
+                }
             }
             if (showGui)
             {
@@ -279,6 +314,13 @@ namespace testrunner
                 if (key == (int)'c')
                 {
                     break;
+                }
+                if (key == (int)'w')
+                {
+                    if (iteration.isNextFrame)
+                    {
+                        poseEstimator->writePlotData = true;
+                    }
                 }
             }
             else if (frameCounter == 1)
