@@ -66,7 +66,7 @@ TCLCHistograms::~TCLCHistograms()
     
 }
 
-void TCLCHistograms::update(const Mat &frame, const Mat &mask, const Mat &depth, Matx33f &K, float zNear, float zFar)
+void TCLCHistograms::update(const Mat &frame, const Mat &mask, const Mat &depth, const Mat &heaviside, Matx33f &K, const Rect & roi, float zNear, float zFar)
 {
     _centersIDs = parallelComputeLocalHistogramCenters(mask, depth, K, zNear, zFar, 0);
     
@@ -83,7 +83,7 @@ void TCLCHistograms::update(const Mat &frame, const Mat &mask, const Mat &depth,
     
     Mat sumsFB = Mat::zeros((int)_centersIDs.size(), 1, CV_32SC2);
     
-    parallel_for_(cv::Range(0, threads), Parallel_For_buildLocalHistograms(frame, mask, _centersIDs, radius, numBins, notNormalizedFG, notNormalizedBG, sumsFB, _model->getModelID(), threads));
+    parallel_for_(cv::Range(0, threads), Parallel_For_buildLocalHistograms(frame, mask, heaviside, roi, _centersIDs, radius, numBins, notNormalizedFG, notNormalizedBG, sumsFB, _model->getModelID(), threads));
     
     parallel_for_(cv::Range(0, threads), Parallel_For_mergeLocalHistograms(notNormalizedFG, notNormalizedBG, normalizedFG, normalizedBG, initialized, _centersIDs, sumsFB, 0.1f, 0.2f, threads));
 

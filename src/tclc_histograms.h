@@ -75,7 +75,7 @@ public:
      *  @param  zNear The near plane used to render the depth map.
      *  @param  zFar The far plane used to render the depth map.
      */
-    void update(const cv::Mat &frame, const cv::Mat &mask, const cv::Mat &depth, cv::Matx33f &K, float zNear, float zFar);
+    void update(const cv::Mat &frame, const cv::Mat &mask, const cv::Mat &depth, const cv::Mat &heaviside, cv::Matx33f &K, const cv::Rect &roi, float zNear, float zFar);
     
     /**
      *  Computes updated center locations and IDs of all histograms that project onto or close
@@ -197,12 +197,16 @@ class Parallel_For_buildLocalHistograms: public cv::ParallelLoopBody
 private:
     cv::Mat _frame;
     cv::Mat _mask;
+    cv::Mat _heaviside;
+    cv::Rect _roi;
     
     uchar* frameData;
     uchar* maskData;
+    uchar* heavisideData;
     
     size_t frameStep;
     size_t maskStep;
+    size_t heavisideStep;
     
     cv::Size size;
     
@@ -230,16 +234,20 @@ private:
 
     
 public:
-    Parallel_For_buildLocalHistograms(const cv::Mat &frame, const cv::Mat &mask, const std::vector<cv::Point3i> &centers, float radius, int numBins, cv::Mat &localHistogramsFG, cv::Mat &localHistogramsBG, cv::Mat &sumsFB, int m_id, int threads)
+    Parallel_For_buildLocalHistograms(const cv::Mat &frame, const cv::Mat &mask, const cv::Mat &heaviside, const cv::Rect &roi, const std::vector<cv::Point3i> &centers, float radius, int numBins, cv::Mat &localHistogramsFG, cv::Mat &localHistogramsBG, cv::Mat &sumsFB, int m_id, int threads)
     {
         _frame = frame;
         _mask = mask;
+        _heaviside = heaviside;
+        _roi = roi;
         
         frameData = _frame.data;
         maskData = _mask.data;
+        heavisideData = heaviside.data;
         
         frameStep = _frame.step;
         maskStep = _mask.step;
+        heavisideStep = _heaviside.step;
         
         size = frame.size();
         
@@ -266,15 +274,29 @@ public:
 
     }
     
-    void processLine(uchar *frameRow, uchar* maskRow, int xl, int xr, int* localHistogramFG, int* localHistogramBG, int* sumFB) const
+    void processLine(uchar *frameRow, uchar* maskRow, uchar* heavisideRow, int xl, int xr, int* localHistogramFG, int* localHistogramBG, int* sumFB, bool heavisideInitialized = true) const
     {
         uchar* frame_ptr = (uchar*)(frameRow) + 3*xl;
         
         uchar* mask_ptr = (uchar*)(maskRow) + xl;
         uchar* mask_max_ptr = (uchar*)(maskRow) + xr;
+
+        if (xl < _roi.x || xr >= _roi.x + _roi.width) {
+            heavisideInitialized = false;
+        }
+
+        float* float_heaviside_row = (float*)(heavisideRow);
+        float* heaviside_ptr = heavisideInitialized ? float_heaviside_row + (xl - _roi.x)  : nullptr;
         
-        for( ; mask_ptr <= mask_max_ptr; mask_ptr += 1, frame_ptr += 3)
+        for( ; mask_ptr <= mask_max_ptr; mask_ptr += 1, frame_ptr += 3, heaviside_ptr += 1)
         {
+            if (heavisideInitialized)
+            {
+                if (*heaviside_ptr < 1.5f && *heaviside_ptr > -0.5f)
+                {
+                    continue;
+                }
+            }
             int pidx;
             int ru, gu, bu;
             
@@ -341,20 +363,36 @@ public:
                     
                     uchar *maskRow0 = maskData + y11 * maskStep;
                     uchar *maskRow1 = maskData + y12 * maskStep;
-                    
-                    processLine(frameRow0, maskRow0, x11, x12, localHistogramFG, localHistogramBG, sumFB);
-                    if(y11 != y12) processLine(frameRow1, maskRow1, x11, x12, localHistogramFG, localHistogramBG, sumFB);
+
+                    bool heavisideInitialized = !_heaviside.empty();
+                    heavisideInitialized &= (y11 >= _roi.y && y11 < _roi.y + _roi.height);
+                    uchar *heavisideRow0 = heavisideInitialized ? heavisideData + (y11 - _roi.y) * heavisideStep : nullptr;
+                    processLine(frameRow0, maskRow0, heavisideRow0, x11, x12, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
+
+                    heavisideInitialized = !_heaviside.empty();
+                    heavisideInitialized &= (y12 >= _roi.y && y12 < _roi.y + _roi.height);
+                    uchar *heavisideRow1 = heavisideInitialized ? heavisideData + (y12 - _roi.y) * heavisideStep : nullptr;
+                    if(y11 != y12) processLine(frameRow1, maskRow1, heavisideRow1, x11, x12, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
                     
                     frameRow0 = frameData + y21 * frameStep;
                     frameRow1 = frameData + y22 * frameStep;
                     
                     maskRow0 = maskData + y21 * maskStep;
                     maskRow1 = maskData + y22 * maskStep;
+
+
                     
                     if(olddx != dx)
                     {
-                        if(y11 != y21) processLine(frameRow0, maskRow0, x21, x22, localHistogramFG, localHistogramBG, sumFB);
-                        if(y12 != y22) processLine(frameRow1, maskRow1, x21, x22, localHistogramFG, localHistogramBG, sumFB);
+                        heavisideInitialized = !_heaviside.empty();
+                        heavisideInitialized &= (y21 >= _roi.y && y21 < _roi.y + _roi.height);
+                        heavisideRow0 = heavisideInitialized ? heavisideData + (y21 - _roi.y) * heavisideStep : nullptr;
+                        if(y11 != y21) processLine(frameRow0, maskRow0, heavisideRow0, x21, x22, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
+
+                        heavisideInitialized = !_heaviside.empty();
+                        heavisideInitialized &= (y22 >= _roi.y && y22 < _roi.y + _roi.height);
+                        heavisideRow1 = heavisideInitialized ? heavisideData + (y22 - _roi.y) * heavisideStep : nullptr;
+                        if(y12 != y22) processLine(frameRow1, maskRow1, heavisideRow1, x21, x22, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
                     }
                 }
                 else if( x11 < size.width && x12 >= 0 && y21 < size.height && y22 >= 0 )
@@ -366,16 +404,23 @@ public:
                     {
                         uchar *frameRow = frameData + y11 * frameStep;
                         uchar *maskRow = maskData + y11 * maskStep;
+
+                        bool heavisideInitialized = !_heaviside.empty();
+                        heavisideInitialized &= (y11 >= _roi.y && y11 < _roi.y + _roi.height);
+                        uchar* heavisideRow = heavisideInitialized ? heavisideData + (y11 - _roi.y) * heavisideStep : nullptr;
                         
-                        processLine(frameRow, maskRow, x11, x12, localHistogramFG, localHistogramBG, sumFB);
+                        processLine(frameRow, maskRow, heavisideRow, x11, x12, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
                     }
                     
                     if( (unsigned)y12 < (unsigned)size.height && (y11 != y12))
                     {
                         uchar *frameRow = frameData + y12 * frameStep;
                         uchar *maskRow = maskData + y12 * maskStep;
-                        
-                        processLine(frameRow, maskRow, x11, x12, localHistogramFG, localHistogramBG, sumFB);
+
+                        bool heavisideInitialized = !_heaviside.empty();
+                        heavisideInitialized &= (y12 >= _roi.y && y12 < _roi.y + _roi.height);
+                        uchar* heavisideRow = heavisideInitialized ? heavisideData + (y12 - _roi.y) * heavisideStep : nullptr;
+                        processLine(frameRow, maskRow, heavisideRow, x11, x12, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
                     }
                     
                     if( x21 < size.width && x22 >= 0 && (olddx != dx))
@@ -387,16 +432,22 @@ public:
                         {
                             uchar *frameRow = frameData + y21 * frameStep;
                             uchar *maskRow = maskData + y21 * maskStep;
-                            
-                            processLine(frameRow, maskRow, x21, x22, localHistogramFG, localHistogramBG, sumFB);
+
+                            bool heavisideInitialized = !_heaviside.empty();
+                            heavisideInitialized &= (y21 >= _roi.y && y21 < _roi.y + _roi.height);
+                            uchar *heavisideRow = heavisideInitialized ? heavisideData + (y21 - _roi.y) * heavisideStep : nullptr;
+                            processLine(frameRow, maskRow, heavisideRow, x21, x22, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
                         }
                         
                         if( (unsigned)y22 < (unsigned)size.height )
                         {
                             uchar *frameRow = frameData + y22 * frameStep;
                             uchar *maskRow = maskData + y22 * maskStep;
-                            
-                            processLine(frameRow, maskRow, x21, x22, localHistogramFG, localHistogramBG, sumFB);
+
+                            bool heavisideInitialized = !_heaviside.empty();
+                            heavisideInitialized &= (y22 >= _roi.y && y22 < _roi.y + _roi.height);
+                            uchar *heavisideRow = heavisideInitialized ? heavisideData + (y22 - _roi.y) * heavisideStep : nullptr;
+                            processLine(frameRow, maskRow, heavisideRow, x21, x22, localHistogramFG, localHistogramBG, sumFB, heavisideInitialized);
                         }
                     }
                 }

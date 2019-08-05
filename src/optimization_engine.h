@@ -296,7 +296,7 @@ public:
 
                 }
 
-                if(fabs(dist) <= 8.0f/* && (dist > 1.23f || dist < -0.23f)*/)
+                if(fabs(dist) <= 8.0f /*&& (dist > 1.23f || dist < -0.23f)*/)
                 {
                     // the smoothed Heaviside value for this signed distance
                     float heaviside = 1.0f/float(CV_PI)*(-atan(dist*s)) + 0.5f;

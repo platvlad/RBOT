@@ -144,7 +144,8 @@ private:
 
     SignedDistanceTransform2D *SDT2D;
     
-    cv::Mat lastFrame;
+    cv::Mat heaviside;
+    cv::Rect roi;
 
 public:
     float plots[6][200];
@@ -164,9 +165,9 @@ private:
 
     float evaluateEnergyFunction(Object3D *object, const cv::Mat &mask, const cv::Mat &depth, const cv::Mat &binned, int level, int threads);
 
-    float evaluateEnergyFunction(TCLCHistograms *tclcHistograms, const std::vector<cv::Point3i> &centersIDs, const cv::Mat &binned, const cv::Mat &heaviside, const cv::Rect &roi, int offsetX, int offsetY, int level, int threads);
+    float evaluateEnergyFunction(TCLCHistograms *tclcHistograms, const std::vector<cv::Point3i> &centersIDs, const cv::Mat &binned, int offsetX, int offsetY, int level, int threads);
     
-    float evaluateEnergyFunction_local(TCLCHistograms *tclcHistograms, const std::vector<cv::Point3i> &centersIDs, const cv::Mat &binned, const cv::Mat &heaviside, const cv::Rect &roi, int offsetX, int offsetY, int level);
+    float evaluateEnergyFunction_local(TCLCHistograms *tclcHistograms, const std::vector<cv::Point3i> &centersIDs, const cv::Mat &binned, int offsetX, int offsetY, int level);
     
 };
 
