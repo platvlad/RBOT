@@ -303,7 +303,8 @@ public:
         }
         
         float s = 1.2f;
-        
+        //float s = 0.4f;
+
         for(int y = r.start*range; y < yEnd; y++)
         {
             float* sdtRow = sdtData + y*_sdt.cols;

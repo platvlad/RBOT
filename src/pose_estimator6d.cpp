@@ -183,12 +183,12 @@ void PoseEstimator6D::plotResiduals(cv::Mat& frame, cv::Matx44f& pose)
     Matx44f directions[6];
     for (int koef = -100; koef < 100; ++koef)
     {
-        directions[0] = Transformations::rotationMatrix(koef * 0.05f, {1, 0, 0});
-        directions[1] = Transformations::rotationMatrix(koef * 0.05, {0, 1, 0});
-        directions[2] = Transformations::rotationMatrix(koef * 0.05, {0, 0, 1});
-        directions[3] = Transformations::translationMatrix(koef * 0.0002, 0, 0);
-        directions[4] = Transformations::translationMatrix(0, koef * 0.0002, 0);
-        directions[5] = Transformations::translationMatrix(0, 0, koef * 0.0002);
+        directions[0] = Transformations::rotationMatrix(koef * 0.02f, {1, 0, 0});
+        directions[1] = Transformations::rotationMatrix(koef * 0.02, {0, 1, 0});
+        directions[2] = Transformations::rotationMatrix(koef * 0.02, {0, 0, 1});
+        directions[3] = Transformations::translationMatrix(koef * 0.0001, 0, 0);
+        directions[4] = Transformations::translationMatrix(0, koef * 0.0001, 0);
+        directions[5] = Transformations::translationMatrix(0, 0, koef * 0.0001);
         for (int i = 0; i < 6; ++i)
         {
             Matx44f &direction = directions[i];
@@ -196,6 +196,8 @@ void PoseEstimator6D::plotResiduals(cv::Mat& frame, cv::Matx44f& pose)
         }
     }
 }
+
+
 
 
 float PoseEstimator6D::estimatePoses(cv::Mat &frame, int frameCounter, bool undistortFrame, bool checkForLoss)
@@ -266,16 +268,12 @@ float PoseEstimator6D::estimatePoses(cv::Mat &frame, int frameCounter, bool undi
             {
                 if(!objects[i]->isTrackingLost())
                 {
-                    Matx44f ground_truth = cv::Matx44f(-0.3810898522543513, 0.9242182011475422, 0.024315451391202336, 0.045087,
-                                                         0.37660185399431406, 0.17919893561710237, -0.908877761330831, 0.047118,
-                                                         -0.8443586726485386, -0.33720684770819653, -0.41635318394591286, 0.789987,
-                                                         0, 0, 0, 1);
                     cv::Matx44f oldPose = objects[0]->getPose();
                     float e = evaluateEnergyFunction(objects[i], mask, depth, binned, 0, 8);
                     float realError = evaluateEnergyByPose(frame, groundTruth[frameCounter]);
                     if (writePlotData)
                     {
-                        plotResiduals(frame, oldPose);
+                        plotResiduals(frame, groundTruth[frameCounter]);
                     }
                     cout << e << ' ' << realError << endl;
 

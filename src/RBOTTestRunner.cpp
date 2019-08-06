@@ -192,7 +192,7 @@ namespace testrunner
         {
             boost::filesystem::path residualsFile = resultDir.string() +
                                                     boost::filesystem::path::preferred_separator +
-                                                    "plots" +
+                                                    "plots_ground_truth" +
                                                     boost::filesystem::path::preferred_separator +
                                                     "plot" +
                                                     std::to_string(frameCounter) +
