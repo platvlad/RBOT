@@ -90,10 +90,22 @@ void SignedDistanceTransform2D::computeTransform(const Mat &src, Mat &sdt, Mat &
     {
         cout << "WRONG IMAGE TYPE FOR SIGNED DISTANCE TRANSFORMATION! NOTE: USE FLOAT OR UCHAR." << endl;
     }
-    
+
+    Mat dd_copy(src.size(), CV_32SC1);
+    int* dd_ptr = (int*)dd.ptr<int>();
+    for (int i = 0; i < dd_copy.rows; ++i)
+    {
+        for (int j = 0; j < dd_copy.cols; ++j)
+        {
+            int dd_index = j * dd_copy.rows + i;
+            dd_copy.at<int>(i, j) = dd_ptr[dd_index];
+        }
+    }
+    cv::imwrite("data/primitive/sdt_rows.png", dd_copy);
     parallel_for_(cv::Range(0, threads), Parallel_For_distanceTransformCols(dd, sdt, xPos, xyPos, maxDist, v, z, f, threads));
     
-    
+    cv::imwrite("data/primitive/mask.png", src);
+    cv::imwrite("data/primitive/sdt.png", sdt);
     free(z);
     free(v);
     free(f);

@@ -101,6 +101,8 @@ public:
 
     void plotResiduals(cv::Mat& frame, cv::Matx44f& pose);
 
+    void minimizeByBruteForce(cv::Mat& frame, float currentEnergy);
+
     float evaluateEnergyByPose(const cv::Mat& frame, const cv::Matx44f& pose);
     
     /**
@@ -148,7 +150,7 @@ private:
 
 public:
     float plots[6][200];
-    bool writePlotData = false;
+    bool writePlotData = true;
 private:
     bool initialized;
     

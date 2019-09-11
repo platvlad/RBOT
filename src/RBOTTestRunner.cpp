@@ -63,7 +63,7 @@ namespace testrunner
         std::vector<cv::Point3f> colors;
         colors.emplace_back(cv::Point3f(0.5, 1.0, 0.0));
         RenderingEngine::Instance()->renderShaded(std::vector<Model*>
-                (objects.begin(), objects.end()), GL_LINE, colors, true);
+                (objects.begin(), objects.end()), GL_FILL, colors, true);
 
         // download the rendering to the CPU
         cv::Mat rendering = RenderingEngine::Instance()->downloadFrame(RenderingEngine::RGB);
@@ -192,7 +192,7 @@ namespace testrunner
         {
             boost::filesystem::path residualsFile = resultDir.string() +
                                                     boost::filesystem::path::preferred_separator +
-                                                    "plots_ground_truth" +
+                                                    "plots" +
                                                     boost::filesystem::path::preferred_separator +
                                                     "plot" +
                                                     std::to_string(frameCounter) +
@@ -275,7 +275,10 @@ namespace testrunner
                 if (poseEstimator->writePlotData)
                 {
                     writePlots(frameCounter);
-                    poseEstimator->writePlotData = false;
+                    if (frameCounter > 2)
+                    {
+                        poseEstimator->writePlotData = false;
+                    }
                 }
             }
             if (showGui)
@@ -375,6 +378,7 @@ namespace testrunner
     {
         return { matrix4(0, 0), matrix4(0, 1), -matrix4(0, 2),
                  matrix4(1, 0), matrix4(1, 1), height - (-matrix4(1, 2)),
+//                 matrix4(1, 0), matrix4(1, 1), -matrix4(1, 2),
                  matrix4(2, 0), matrix4(2, 1), -matrix4(2, 2) };
 
     }

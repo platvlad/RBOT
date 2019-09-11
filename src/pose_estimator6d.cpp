@@ -183,12 +183,12 @@ void PoseEstimator6D::plotResiduals(cv::Mat& frame, cv::Matx44f& pose)
     Matx44f directions[6];
     for (int koef = -100; koef < 100; ++koef)
     {
-        directions[0] = Transformations::rotationMatrix(koef * 0.02f, {1, 0, 0});
-        directions[1] = Transformations::rotationMatrix(koef * 0.02, {0, 1, 0});
-        directions[2] = Transformations::rotationMatrix(koef * 0.02, {0, 0, 1});
-        directions[3] = Transformations::translationMatrix(koef * 0.0001, 0, 0);
-        directions[4] = Transformations::translationMatrix(0, koef * 0.0001, 0);
-        directions[5] = Transformations::translationMatrix(0, 0, koef * 0.0001);
+        directions[0] = Transformations::rotationMatrix(koef * 0.3f, {1, 0, 0});
+        directions[1] = Transformations::rotationMatrix(koef * 0.3, {0, 1, 0});
+        directions[2] = Transformations::rotationMatrix(koef * 0.3, {0, 0, 1});
+        directions[3] = Transformations::translationMatrix(koef * 0.0002, 0, 0);
+        directions[4] = Transformations::translationMatrix(0, koef * 0.0002, 0);
+        directions[5] = Transformations::translationMatrix(0, 0, koef * 0.0002);
         for (int i = 0; i < 6; ++i)
         {
             Matx44f &direction = directions[i];
@@ -197,7 +197,44 @@ void PoseEstimator6D::plotResiduals(cv::Mat& frame, cv::Matx44f& pose)
     }
 }
 
-
+void PoseEstimator6D::minimizeByBruteForce(cv::Mat& frame, float currentEnergy)
+{
+    Matx44f directions[6];
+    for (int koef = 1; koef < 50; ++koef)
+    {
+        for (int i = 0; i < 2; ++i)
+        {
+            if (i == 1)
+            {
+                koef = -koef;
+            }
+            directions[0] = Transformations::rotationMatrix(koef * 0.2f, {1, 0, 0});
+            directions[1] = Transformations::rotationMatrix(koef * 0.2, {0, 1, 0});
+            directions[2] = Transformations::rotationMatrix(koef * 0.2, {0, 0, 1});
+            directions[3] = Transformations::translationMatrix(koef * 0.001, 0, 0);
+            directions[4] = Transformations::translationMatrix(0, koef * 0.001, 0);
+            directions[5] = Transformations::translationMatrix(0, 0, koef * 0.001);
+            for (int i = 0; i < 6; ++i)
+            {
+                Matx44f &direction = directions[i];
+                Matx44f oldPose = objects[0]->getPose();
+                Matx44f testedPose = oldPose * direction;
+                float newEnergy = evaluateEnergyByPose(frame, testedPose);
+                if (newEnergy < currentEnergy)
+                {
+                    objects[0]->setPose(testedPose);
+                    minimizeByBruteForce(frame, newEnergy);
+                    return;
+                }
+                objects[0]->setPose(oldPose);
+            }
+            if (i == 1)
+            {
+                koef = -koef;
+            }
+        }
+    }
+}
 
 
 float PoseEstimator6D::estimatePoses(cv::Mat &frame, int frameCounter, bool undistortFrame, bool checkForLoss)
@@ -275,9 +312,11 @@ float PoseEstimator6D::estimatePoses(cv::Mat &frame, int frameCounter, bool undi
                     {
                         plotResiduals(frame, groundTruth[frameCounter]);
                     }
+                    objects[0]->setPose(oldPose);
+                    // minimizeByBruteForce(frame, e);
+                    // e = evaluateEnergyFunction(objects[i], mask, depth, binned, 0, 8);
                     cout << e << ' ' << realError << endl;
 
-                    objects[0]->setPose(oldPose);
                     if (i == 0)
                     {
                         firstObjectResidual = e;

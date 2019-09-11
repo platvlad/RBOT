@@ -145,9 +145,13 @@ public:
         {
             yEnd = _src.rows;
         }
-        
+
         for(int y = r.start*range; y < yEnd; y++)
         {
+            if (y == 2)
+            {
+
+            }
             type *src_row = src_pixels + y * _src.cols;
             int *v = _v + r.start * _src.cols;
             int *z = _z + r.start * (_src.cols + 1);
@@ -170,6 +174,11 @@ public:
             {
                 for(j = 0; j < _src.cols; j++)
                 {
+                    int some_dich = INT_MAX + !!src_row[j];
+                    if (j == 21)
+                    {
+
+                    }
                     dd[j * _src.rows + y] = INT_MAX + !!src_row[j];
                     xPos[y * _src.cols + j] = -1;
                 }
